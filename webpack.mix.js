@@ -18,8 +18,11 @@ mix.js('resources/js/app.js', 'public/js')
     processCssUrls: false,
     postCss: [ tailwindcss('./tailwind.config.js') ],
     autoprefixer: {
-     enabled: true,
+      enabled: true,
     },
+    terser: {
+      extractComments: false,
+    }
   })
   .disableSuccessNotifications()
   .version();

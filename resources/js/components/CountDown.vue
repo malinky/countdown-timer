@@ -4,6 +4,7 @@
       <div class="grid grid-cols-3 col-gap-8 row-gap-12 w-full">
         <input
           type="text"
+          pattern="[0-9]*"
           class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center p-2 border border-grey-400 focus:border-orange-500 rounded-sm appearance-none shadow-none focus:outline-none focus:shadow-outline"
           v-model.number="duration.hours"
           ref="durationHours"
@@ -11,6 +12,7 @@
           @blur="duration.hours = duration.hours === '' ? 0 : duration.hours">
         <input
           type="text"
+          pattern="[0-9]*"
           class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center p-2 border border-grey-400 focus:border-orange-500 rounded-sm appearance-none shadow-none focus:outline-none focus:shadow-outline"
           v-model.number="duration.minutes"
           ref="durationMinutes"
@@ -18,6 +20,7 @@
           @blur="duration.minutes = duration.minutes === '' ? 0 : duration.minutes">
         <input
           type="text"
+          pattern="[0-9]*"
           class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl text-center p-2 border border-grey-400 focus:border-orange-500 rounded-sm appearance-none shadow-none focus:outline-none focus:shadow-outline"
           v-model.number="duration.seconds"
           ref="durationSeconds"
@@ -44,6 +47,7 @@
     components: {
       NotificationIcon,
     },
+
     data() {
       return {
         timerRunning: false,
@@ -51,33 +55,60 @@
         timeRemaining: '',
         timerEnd: '',
         duration: this.defaultDuration(),
-        allowNotifcations: Notification.permission === 'granted' ? true : false,
+        allowNotifcations: "Notification" in window && Notification.permission === 'granted' ? true : false,
       }
     },
+
     computed: {
       disabled: function () {
         return ! this.duration.hours && ! this.duration.minutes && ! this.duration.seconds;
       },
     },
+
     methods: {
       start() {
         if (this.timerRunning) {
           this.stop();
           return;
         }
-        this.checkNotifcationPermission().then(() => {
-          this.timerRunning = true;
-          this.blurInputs();
-          this.setTimer();
-        });
+
+        if ( ! ("Notification" in window)) {
+          alert("This browser does not support desktop notifications. You will not be notified when the timer ends.")
+        } else {
+          if (this.checkNotificationPromise()) {
+            Notification.requestPermission().then(permission => this.handlePermission(permission));
+          } else {
+            Notification.requestPermission(permission => this.handlePermission(permission));
+          }
+        }
+
+        this.timerRunning = true;
+        this.blurInputs();
+        this.setTimer();
       },
-      stop() {
-        this.timerRunning = false;
-        clearInterval(this.timerId);
+
+      checkNotificationPromise() {
+        try {
+          Notification.requestPermission().then();
+        } catch(e) {
+          return false;
+        }
+          return true;
       },
+
+      handlePermission(permission) {
+        if (permission === 'granted') {
+          this.allowNotifcations = true;
+        } else if (permission === 'denied') {
+          alert('Desktop notifications are blocked. Please enable them in your browser to be notified when the timer ends.');
+        } else if (permission === 'default') {
+          alert('Turn on desktop notifications to be notified when the timer ends.');
+        }
+      },
+
       setTimer() {
-        this.timerEnd = moment().add({
-          hours: this.duration.hours - 1,
+        this.timerEnd = moment.utc().add({
+          hours: this.duration.hours,
           minutes: this.duration.minutes,
           seconds: this.duration.seconds,
         });
@@ -87,8 +118,9 @@
           this.timer();
         }, 1000);
       },
+
       timer() {
-        this.timeRemaining = moment(this.timerEnd.diff(moment()));
+        this.timeRemaining = moment.utc(this.timerEnd.diff(moment.utc()));
         this.duration.hours = this.timeRemaining.hours();
         this.duration.minutes = this.timeRemaining.minutes();
         this.duration.seconds = this.timeRemaining.seconds();
@@ -97,16 +129,25 @@
 
         ! this.isFinished(this.timeRemaining.format('HH:mm:ss')) || this.finish();
       },
+
       isFinished(timeRemaining) {
         return timeRemaining === '00:00:00';
       },
+
       finish() {
         this.stop();
         const notification = new Notification('Task Finished');
       },
+
+      stop() {
+        this.timerRunning = false;
+        clearInterval(this.timerId);
+      },
+
       reset() {
         this.duration = this.defaultDuration();
       },
+
       defaultDuration() {
         return {
           hours: 0,
@@ -114,23 +155,11 @@
           seconds: 0,
         }
       },
+
       setDocumentTitle() {
-        document.title = `${this.timeRemaining.format('HH:mm:ss')} | Countdown Timer`;
+        document.title = `${this.timeRemaining.format('HH:mm:ss')} | ${window.countdownTimer.appName}`;
       },
-      checkNotifcationPermission() {
-        if ( ! ("Notification" in window)) {
-          alert("This browser does not support desktop notification");
-        }
-        return Notification.requestPermission().then(permission => {
-          if (permission === 'granted') {
-            this.allowNotifcations = true;
-          } else if (permission === 'denied') {
-             alert('Desktop notifications are blocked. Please enable them in your browser to be notified when the timer ends.');
-          } else if (permission === 'default') {
-            alert('Turn on desktop notifications to be notified when the timer ends.');
-          }
-        });
-      },
+
       blurInputs() {
         this.$refs.durationHours.blur();
         this.$refs.durationMinutes.blur();

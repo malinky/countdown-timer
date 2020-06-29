@@ -20,6 +20,12 @@
     <link rel="manifest" href="{{ url('site.webmanifest') }}">
 
     <link rel="stylesheet" href="{{ mix('css/app.css') }}">
+
+    <script>
+      window.countdownTimer = {
+        appName: '{{ config('app.name') }}',
+      }
+    </script>
   </head>
   <body>
     <div id="app" class="text-grey-800">
