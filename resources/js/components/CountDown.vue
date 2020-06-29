@@ -74,6 +74,7 @@
 
         if ( ! ("Notification" in window)) {
           alert("This browser does not support desktop notifications. You will not be notified when the timer ends.")
+          this.startTimer();
         } else {
           if (this.checkNotificationPromise()) {
             Notification.requestPermission().then(permission => this.handlePermission(permission));
@@ -81,7 +82,9 @@
             Notification.requestPermission(permission => this.handlePermission(permission));
           }
         }
+      },
 
+      startTimer() {
         this.timerRunning = true;
         this.blurInputs();
         this.setTimer();
@@ -104,6 +107,8 @@
         } else if (permission === 'default') {
           alert('Turn on desktop notifications to be notified when the timer ends.');
         }
+
+        this.startTimer();
       },
 
       setTimer() {
