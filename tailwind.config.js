@@ -1,5 +1,10 @@
 module.exports = {
-  purge: [],
+  purge: {
+    enabled: process.env.NODE_ENV === 'production',
+    content: [
+      './resources/**/*.vue'
+    ]
+  },
   target: 'relaxed',
   prefix: '',
   important: false,
